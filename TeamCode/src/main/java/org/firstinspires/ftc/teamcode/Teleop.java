@@ -22,9 +22,6 @@ public class Teleop extends LimelightOpMode {
     private final static double MOTOR_SPEED = 13406.4;
     private final static int[] validIDs = {11,12,13,14,15,16};
     FtcDashboard dashboard;
-
-    // USB POWER BRICK IN BOX
-
     @Override
     public void start() {
         leftFront = getDriveMotor("leftFront");

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.limemode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
@@ -16,8 +17,10 @@ public abstract class LimelightOpMode extends OpMode {
     protected IMU imu;
     protected Limelight3A limelight;
     protected double yawOffset = 0;
+    protected FtcDashboard dashboard;
     @Override
     public void init() {
+        dashboard = FtcDashboard.getInstance();
         start();
         if (leftFront == null || leftRear == null || rightFront == null || rightRear == null) {
             throw new RuntimeException("A motor is not properly initialized !");
