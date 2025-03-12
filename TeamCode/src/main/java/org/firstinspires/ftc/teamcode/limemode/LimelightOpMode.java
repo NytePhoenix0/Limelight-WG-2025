@@ -1,10 +1,12 @@
 package org.firstinspires.ftc.teamcode.limemode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 
@@ -12,12 +14,16 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
+import java.sql.Time;
 public abstract class LimelightOpMode extends OpMode {
     protected DcMotorEx leftFront, leftRear, rightFront, rightRear;
     protected IMU imu;
     protected Limelight3A limelight;
     protected double yawOffset = 0;
     protected FtcDashboard dashboard;
+    private Pose3D megaTag1Pose;
+    private Pose3D megaTag2Pose;
+    private long tagAquisitionTime = 0;
     @Override
     public void init() {
         dashboard = FtcDashboard.getInstance();
@@ -46,29 +52,15 @@ public abstract class LimelightOpMode extends OpMode {
         double yawDeg = orientation.getYaw(AngleUnit.DEGREES);
         double yaw = Numbers.normalizeAngle(yawDeg);
         double yawRad = orientation.getYaw(AngleUnit.RADIANS);
-        _getLimelightData(yaw);
+        // _getLimelightData(yaw);
         update();
         telemetry.update();
     }
 
-    private void _getLimelightData(double yaw) {
-        double limelightOrientation = (yaw + yawOffset) % 360;
-        if (limelightOrientation > 180) limelightOrientation -= 360;
-        limelight.updateRobotOrientation(limelightOrientation);
-        LLResult result = limelight.getLatestResult();
-        if (result != null && result.isValid()) {
-            Pose3D botpose = result.getBotpose_MT2();
-            Pose3D botposemt1 = result.getBotpose();
-            telemetry.addData("MT2: position", botpose.getPosition());
-            telemetry.addData("MT2: orientation", botpose.getOrientation());
-            telemetry.addData("MT1: position", botposemt1.getPosition());
-            telemetry.addData("MT1: orientation", botposemt1.getOrientation());
-        }
-        else {
-            telemetry.addLine("Null pose result");
-        }
 
 
+    public Pose3D getPose() {
+        return megaTag2Pose;
     }
 
     public abstract void start();
