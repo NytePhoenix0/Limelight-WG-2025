@@ -49,7 +49,7 @@ public class Chassis {
         return null;
     }
 
-    public void move(double yawRads, double x, double y, double r) {
+    public void move(double yawRads, double x, double y, double r, double s) {
         double rotX = x * Math.cos(-yawRads) - y * Math.sin(-yawRads);
         double rotY = x * Math.sin(-yawRads) + y * Math.cos(-yawRads);
         rotX *= 1.1;
@@ -58,10 +58,10 @@ public class Chassis {
         double backLeftPower = (rotY - rotX + r) / denominator;
         double frontRightPower = (rotY - rotX - r) / denominator;
         double backRightPower = (rotY + rotX - r) / denominator;
-        leftFront.setVelocity(frontLeftPower);
-        leftRear.setVelocity(backLeftPower);
-        rightFront.setVelocity(frontRightPower);
-        rightRear.setVelocity(backRightPower);
+        leftFront.setVelocity(frontLeftPower * s);
+        leftRear.setVelocity(backLeftPower * s);
+        rightFront.setVelocity(frontRightPower * s);
+        rightRear.setVelocity(backRightPower * s);
     }
 
     public DcMotorEx getDriveMotor(String name) {
