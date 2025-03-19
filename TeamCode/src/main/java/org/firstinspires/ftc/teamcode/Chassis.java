@@ -32,10 +32,6 @@ public class Chassis {
         imu.resetYaw();
         limelight.pipelineSwitch(0);
         limelight.start();
-        LLResult result = limelight.getLatestResult();
-        if (result != null && result.isValid()) {
-            yawOffset = result.getBotpose().getOrientation().getYaw(AngleUnit.DEGREES);
-        }
     }
 
     public LLResult getLimelightData(double yaw) {
