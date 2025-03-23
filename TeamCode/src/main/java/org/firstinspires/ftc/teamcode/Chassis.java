@@ -38,6 +38,7 @@ public class Chassis {
         double limelightOrientation = (yaw + yawOffset) % 360;
         if (limelightOrientation > 180) limelightOrientation -= 360;
         limelight.updateRobotOrientation(limelightOrientation);
+        opMode.telemetry.addData("LimelightYaw", limelightOrientation);
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
             return result;
@@ -54,6 +55,11 @@ public class Chassis {
         double backLeftPower = (rotY - rotX + r) / denominator;
         double frontRightPower = (rotY - rotX - r) / denominator;
         double backRightPower = (rotY + rotX - r) / denominator;
+        opMode.telemetry.addLine(String.format("Moving the robot with the following powers:"));
+        opMode.telemetry.addData("Left front", frontLeftPower);
+        opMode.telemetry.addData("left back", backLeftPower);
+        opMode.telemetry.addData("Right front", frontRightPower);
+        opMode.telemetry.addData("right back", backRightPower);
         leftFront.setVelocity(frontLeftPower * s);
         leftRear.setVelocity(backLeftPower * s);
         rightFront.setVelocity(frontRightPower * s);

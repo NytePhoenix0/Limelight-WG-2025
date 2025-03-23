@@ -41,7 +41,7 @@ public class PIDController {
 
         lastError = error;
         previousTime = currentTime;
-        if (debug) telemetry.addData("err actual", error);
+        if (debug) telemetry.addData("Error actual", error);
         return (kP * error) + (kI * integralError) + (kD * derivitiveError);
     }
 
