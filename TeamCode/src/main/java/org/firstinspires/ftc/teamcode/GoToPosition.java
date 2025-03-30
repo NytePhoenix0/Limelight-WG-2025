@@ -1,0 +1,149 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.limemode.PIDController;
+
+@Config
+@TeleOp(name="GoToPosition")
+public class GoToPosition extends LinearOpMode {
+    public static double TIME_BETWEEN_TARGETS = 0;
+    int TOTAL_TARGETS = 5;
+    int CURRENT_TARGET = 0;
+    private final double[] X_TARGETS = new double[] {0, 1.2 , 1.2, -1.2, -1.2};
+    private final double[] Y_TARGETS = new double[] {0, -1.2, 1.2, 1.2 , -1.2};
+    private double reached_destination = 0;
+    public static double DESTINATION_THRESHOLD = 100;
+    public static double TARGET_PRECISION = 0.05;
+    public static double SLOWDOWN_PRECISION = 0.2;
+    public double TARGET_X = 0;
+    public double TARGET_Y = 0;
+    public static double SPEED = 3000;
+    public static double SLOWDOWN_SPEED = 1000;
+    private double currentSpeed = 1000;
+    public static double SPIN_SPEED = 1000;
+    public static boolean PAUSED = false;
+    public static double kP = 1;
+    public static double kI = 0.00000000001;
+    public static double kD = 0.1;
+    public MultipleTelemetry multipleTelemetry;
+    public FtcDashboard dashboard;
+    @Override
+    public void runOpMode() throws InterruptedException {
+        dashboard = FtcDashboard.getInstance();
+        multipleTelemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
+        Chassis chassis = new Chassis(this);
+        PIDController xController = new PIDController(TARGET_X, kD, kI, kD, multipleTelemetry);
+        PIDController yController = new PIDController(TARGET_Y, kP, kI, kD, multipleTelemetry);
+        boolean is_on_blue = true;
+        while (!isStarted()) {
+            YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
+            double yawDeg = orientation.getYaw(AngleUnit.DEGREES);
+            LLResult result = chassis.getLimelightData(yawDeg);
+            if (result != null) {
+                YawPitchRollAngles mt1 = result.getBotpose().getOrientation();
+                double y = mt1.getYaw(AngleUnit.DEGREES);
+                telemetry.addData("megatag yaw", y);
+            }
+            telemetry.addLine("Waiting for start");
+            if (gamepad1.a) is_on_blue = true;
+            else if (gamepad1.b) is_on_blue = false;
+            telemetry.addLine("Starting on " + (is_on_blue ? "BLUE" : "RED"));
+            telemetry.update();
+        }
+        chassis.yawOffset = is_on_blue ? 0 : 180;
+        double movementOffset = (chassis.yawOffset/360) * 2 * Math.PI;
+        chassis.imu.resetYaw();
+        waitForStart();
+        double lastX = 0;
+        double lastY = 0;
+        double lastTime = -1;
+        boolean wasPaused = false;
+        double lastDeltaTime = System.currentTimeMillis();
+        double waittime = 0;
+        while (opModeIsActive()) {
+            TARGET_X = X_TARGETS[CURRENT_TARGET%TOTAL_TARGETS];
+            TARGET_Y = Y_TARGETS[CURRENT_TARGET%TOTAL_TARGETS];
+            double delta = (System.currentTimeMillis() - lastDeltaTime);
+            multipleTelemetry.addData("Delta", delta);
+            // Sync values
+            boolean synced = xController.sync(TARGET_X, kD, kI, kP) || yController.sync(TARGET_Y, kD, kI, kP);
+            if (synced) reached_destination = 0;
+
+            if (PAUSED) {
+                wasPaused = true;
+                telemetry.addLine("currently paused!");
+                telemetry.update();
+                chassis.move(0, 0, 0, 0, 0);
+                lastDeltaTime = System.currentTimeMillis();
+                continue;
+            }
+            else if (wasPaused) {
+                wasPaused = false;
+                xController.reset();
+                yController.reset();
+                reached_destination = 0;
+            }
+            if (reached_destination > DESTINATION_THRESHOLD) {
+                telemetry.addLine("Reached destination!");
+                telemetry.update();
+                chassis.move(0, 0, 0, 0, 0);
+                CURRENT_TARGET++;
+                xController.reset();
+                yController.reset();
+                reached_destination = 0;
+
+                lastDeltaTime = System.currentTimeMillis();
+                continue;
+            }
+            YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
+            double yawRads = orientation.getYaw(AngleUnit.RADIANS);
+            double yawDeg = orientation.getYaw(AngleUnit.DEGREES);
+            LLResult result = chassis.getLimelightData(yawDeg);
+            multipleTelemetry.addData("Target index", CURRENT_TARGET);
+            multipleTelemetry.addData("Target position", String.format("(%s, %s)", TARGET_X, TARGET_Y));
+            if (result != null) {
+                Position mt2 = result.getBotpose_MT2().getPosition();
+                double x_pos = mt2.x;
+                double y_pos = mt2.y;
+                multipleTelemetry.addData("Position", String.format("(%s, %s)", x_pos, y_pos));
+
+                double x = xController.update(x_pos, false);
+                double y = yController.update(y_pos, false);
+                double distance = Math.sqrt(x * x + y * y);
+                multipleTelemetry.addData("Distance", distance);
+                if (distance < SLOWDOWN_PRECISION) {
+                    currentSpeed = SLOWDOWN_SPEED;
+                }
+                else {
+                    currentSpeed = SPEED;
+                }
+                multipleTelemetry.addData("Speed", currentSpeed);
+                if (distance < TARGET_PRECISION) {
+                    reached_destination += delta;
+                }
+                multipleTelemetry.addData("reached_destination", reached_destination);
+                chassis.move(yawRads + movementOffset, x, y, 0, currentSpeed);
+                lastX = x;
+                lastY = y;
+                lastTime = System.currentTimeMillis();
+            }
+            else {
+                multipleTelemetry.addLine("Cannot see apriltags, spinning");
+                chassis.move(yawRads + movementOffset, 0, 0, 1, SPIN_SPEED);
+            }
+            lastDeltaTime = System.currentTimeMillis();
+            multipleTelemetry.update();
+        }
+    }
+}

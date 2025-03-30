@@ -45,11 +45,13 @@ public class PIDController {
         return (kP * error) + (kI * integralError) + (kD * derivitiveError);
     }
 
-    public void sync(double target, double kD, double kI, double kP) {
-        if (this.kD != kD) { this.kD = kD; reset(); }
-        if (this.kI != kI) { this.kI = kI; reset(); }
-        if (this.kP != kP) { this.kP = kP; reset(); }
-        if (this.target != target) { this.target = target; reset(); }
+    public boolean sync(double target, double kD, double kI, double kP) {
+        boolean changed = false;
+        if (this.kD != kD) { this.kD = kD; reset(); changed = true;}
+        if (this.kI != kI) { this.kI = kI; reset(); changed = true;}
+        if (this.kP != kP) { this.kP = kP; reset(); changed = true;}
+        if (this.target != target) { this.target = target; reset(); changed = true;}
+        return changed;
     }
 
     public void reset() {
