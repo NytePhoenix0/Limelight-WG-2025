@@ -29,6 +29,7 @@ public class Chassis {
         imu.initialize(new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.UP, RevHubOrientationOnRobot.UsbFacingDirection.LEFT
         )));
+
         imu.resetYaw();
         limelight.pipelineSwitch(0);
         limelight.start();

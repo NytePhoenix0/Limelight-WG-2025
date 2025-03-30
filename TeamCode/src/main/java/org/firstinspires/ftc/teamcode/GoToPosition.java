@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -26,6 +27,7 @@ public class GoToPosition extends LinearOpMode {
     public static double DESTINATION_THRESHOLD = 100;
     public static double TARGET_PRECISION = 0.05;
     public static double SLOWDOWN_PRECISION = 0.2;
+    public static double SPIN_SLOWDOWN_THINGY = 500;
     public double TARGET_X = 0;
     public double TARGET_Y = 0;
     public static double SPEED = 3000;
@@ -71,6 +73,7 @@ public class GoToPosition extends LinearOpMode {
         boolean wasPaused = false;
         double lastDeltaTime = System.currentTimeMillis();
         double waittime = 0;
+        boolean pressed = false;
         while (opModeIsActive()) {
             TARGET_X = X_TARGETS[CURRENT_TARGET%TOTAL_TARGETS];
             TARGET_Y = Y_TARGETS[CURRENT_TARGET%TOTAL_TARGETS];
@@ -80,11 +83,36 @@ public class GoToPosition extends LinearOpMode {
             boolean synced = xController.sync(TARGET_X, kD, kI, kP) || yController.sync(TARGET_Y, kD, kI, kP);
             if (synced) reached_destination = 0;
 
+            YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
+            double yawRads = orientation.getYaw(AngleUnit.RADIANS);
+            double yawDeg = orientation.getYaw(AngleUnit.DEGREES);
+            telemetry.addData("IMU Yaw", yawDeg);
+            telemetry.addData("Yaw Offset", chassis.yawOffset);
+            LLResult result = chassis.getLimelightData(yawDeg);
+            if (gamepad1.dpad_right) {
+                if (!pressed) {
+                    PAUSED = !PAUSED;
+                }
+                pressed = true;
+            }
+            else if (pressed) pressed = false;
             if (PAUSED) {
                 wasPaused = true;
                 telemetry.addLine("currently paused!");
+                if (result != null) {
+                    Position mt2 = result.getBotpose_MT2().getPosition();
+                    telemetry.addData("Position", mt2);
+                }
+                else {
+                    telemetry.addLine("Cannot see apriltags to find position...");
+                }
                 telemetry.update();
-                chassis.move(0, 0, 0, 0, 0);
+                if (gamepad1.dpad_left) {
+                    chassis.move(yawRads, 0, 0, Range.clip(yawDeg/30, -1, 1), SPIN_SPEED);
+                }
+                else {
+                    chassis.move(yawRads, 0, 0, 0, 0);
+                }
                 lastDeltaTime = System.currentTimeMillis();
                 continue;
             }
@@ -106,10 +134,6 @@ public class GoToPosition extends LinearOpMode {
                 lastDeltaTime = System.currentTimeMillis();
                 continue;
             }
-            YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
-            double yawRads = orientation.getYaw(AngleUnit.RADIANS);
-            double yawDeg = orientation.getYaw(AngleUnit.DEGREES);
-            LLResult result = chassis.getLimelightData(yawDeg);
             multipleTelemetry.addData("Target index", CURRENT_TARGET);
             multipleTelemetry.addData("Target position", String.format("(%s, %s)", TARGET_X, TARGET_Y));
             if (result != null) {
@@ -139,8 +163,12 @@ public class GoToPosition extends LinearOpMode {
                 lastTime = System.currentTimeMillis();
             }
             else {
+                double timeDiff = (System.currentTimeMillis()-lastTime)/SPIN_SLOWDOWN_THINGY;
+                double curve = Range.clip(-Math.pow(timeDiff, 2) + 1, 0, 1);
+                multipleTelemetry.addData("Curve", curve);
                 multipleTelemetry.addLine("Cannot see apriltags, spinning");
-                chassis.move(yawRads + movementOffset, 0, 0, 1, SPIN_SPEED);
+
+                chassis.move(yawRads + movementOffset, lastX * curve, lastY * curve, 1 - curve, SPIN_SPEED);
             }
             lastDeltaTime = System.currentTimeMillis();
             multipleTelemetry.update();

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
@@ -18,8 +19,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.limemode.LimelightOpMode;
 
 @TeleOp
+@Config
 public class Teleop extends LimelightOpMode {
-    private final static double MOTOR_SPEED = 13406.4;
+    public static double MOTOR_SPEED = 2681.28;
     private final static int[] validIDs = {11,12,13,14,15,16};
     FtcDashboard dashboard;
     @Override
@@ -33,6 +35,10 @@ public class Teleop extends LimelightOpMode {
     @Override
     public void update() {
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+
+        telemetry.addData("Yaw", orientation.getYaw(AngleUnit.DEGREES));
+        telemetry.addData("Yaw vel", imu.getRobotAngularVelocity(AngleUnit.DEGREES).zRotationRate);
+
         double y = -gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
@@ -46,10 +52,10 @@ public class Teleop extends LimelightOpMode {
         double frontRightPower = (rotY - rotX - rx) / denominator;
         double backRightPower = (rotY + rotX - rx) / denominator;
         telemetry.addData("yawRags", yawRads);
-        leftFront.setVelocity(frontLeftPower * MOTOR_SPEED * 0.25);
-        leftRear.setVelocity(backLeftPower * MOTOR_SPEED * 0.25);
-        rightFront.setVelocity(frontRightPower * MOTOR_SPEED * 0.25);
-        rightRear.setVelocity(backRightPower * MOTOR_SPEED * 0.25);
+        leftFront.setVelocity(frontLeftPower * MOTOR_SPEED);
+        leftRear.setVelocity(backLeftPower * MOTOR_SPEED);
+        rightFront.setVelocity(frontRightPower * MOTOR_SPEED);
+        rightRear.setVelocity(backRightPower * MOTOR_SPEED);
         telemetry.update();
     }
 
