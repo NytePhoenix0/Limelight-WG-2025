@@ -24,20 +24,33 @@ public class Teleop extends LimelightOpMode {
     public static double MOTOR_SPEED = 2681.28;
     private final static int[] validIDs = {11,12,13,14,15,16};
     FtcDashboard dashboard;
+    IMU control_hub_imu;
+    boolean a = false;
     @Override
     public void start() {
         leftFront = getDriveMotor("leftFront");
         leftRear = getDriveMotor("leftRear");
         rightFront = getDriveMotor("rightFront");
         rightRear = getDriveMotor("rightRear");
+
+        control_hub_imu = hardwareMap.get(IMU.class, "imu2");
+        control_hub_imu.resetYaw();
     }
 
     @Override
     public void update() {
+        if (!a) {
+            resetRuntime();
+            a = true;
+        }
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+        YawPitchRollAngles orientation_control = control_hub_imu.getRobotYawPitchRollAngles();
 
         telemetry.addData("Yaw", orientation.getYaw(AngleUnit.DEGREES));
         telemetry.addData("Yaw vel", imu.getRobotAngularVelocity(AngleUnit.DEGREES).zRotationRate);
+        telemetry.addData("Control Yaw", orientation_control.getYaw(AngleUnit.DEGREES));
+        telemetry.addData("Control Yaw vel", control_hub_imu.getRobotAngularVelocity(AngleUnit.DEGREES).zRotationRate);
+        telemetry.addData("Runtime", getRuntime());
 
         double y = -gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
