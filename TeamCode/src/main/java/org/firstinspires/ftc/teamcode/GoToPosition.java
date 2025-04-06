@@ -3,12 +3,14 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.ftccommon.SoundPlayer;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.android.AndroidSoundPool;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
@@ -21,6 +23,8 @@ public class GoToPosition extends LinearOpMode {
     public static double TIME_BETWEEN_TARGETS = 0;
     int TOTAL_TARGETS = 5;
     int CURRENT_TARGET = 0;
+//    private final double[] X_TARGETS = new double[] {0, 1.2 , 1.2, -1.2, -1.2};
+//    private final double[] Y_TARGETS = new double[] {0, -1.2, 1.2, 1.2 , -1.2};
     private final double[] X_TARGETS = new double[] {0, 1.2 , 1.2, -1.2, -1.2};
     private final double[] Y_TARGETS = new double[] {0, -1.2, 1.2, 1.2 , -1.2};
     private double reached_destination = 0;
@@ -40,6 +44,8 @@ public class GoToPosition extends LinearOpMode {
     public static double kD = 0.1;
     public MultipleTelemetry multipleTelemetry;
     public FtcDashboard dashboard;
+    private AndroidSoundPool androidSoundPool;
+
     @Override
     public void runOpMode() throws InterruptedException {
         dashboard = FtcDashboard.getInstance();
@@ -48,6 +54,8 @@ public class GoToPosition extends LinearOpMode {
         PIDController xController = new PIDController(TARGET_X, kD, kI, kD, multipleTelemetry);
         PIDController yController = new PIDController(TARGET_Y, kP, kI, kD, multipleTelemetry);
         boolean is_on_blue = true;
+        androidSoundPool = new AndroidSoundPool();
+        androidSoundPool.initialize(SoundPlayer.getInstance());
         while (!isStarted()) {
             YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
             double yawDeg = orientation.getYaw(AngleUnit.DEGREES);
@@ -123,6 +131,7 @@ public class GoToPosition extends LinearOpMode {
                 reached_destination = 0;
             }
             if (reached_destination > DESTINATION_THRESHOLD) {
+                androidSoundPool.play("RawRes:ss_laser");
                 telemetry.addLine("Reached destination!");
                 telemetry.update();
                 chassis.move(0, 0, 0, 0, 0);
@@ -142,8 +151,8 @@ public class GoToPosition extends LinearOpMode {
                 double y_pos = mt2.y;
                 multipleTelemetry.addData("Position", String.format("(%s, %s)", x_pos, y_pos));
 
-                double x = xController.update(x_pos, false);
-                double y = yController.update(y_pos, false);
+                double x = xController.update(x_pos);
+                double y = yController.update(y_pos);
                 double distance = Math.sqrt(x * x + y * y);
                 multipleTelemetry.addData("Distance", distance);
                 if (distance < SLOWDOWN_PRECISION) {

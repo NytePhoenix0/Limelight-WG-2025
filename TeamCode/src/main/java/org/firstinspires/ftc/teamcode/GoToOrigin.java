@@ -121,8 +121,8 @@ public class GoToOrigin extends LinearOpMode {
                 double y_pos = mt2.y + y_offset;
                 multipleTelemetry.addData("Position", String.format("(%s, %s)", x_pos, y_pos));
 
-                double x = xController.update(x_pos, false);
-                double y = yController.update(y_pos, false);
+                double x = xController.update(x_pos);
+                double y = yController.update(y_pos);
                 if (Math.sqrt(x * x + y * y) < TARGET_PRECISION) {
                     reached_destination += 1;
                 }
