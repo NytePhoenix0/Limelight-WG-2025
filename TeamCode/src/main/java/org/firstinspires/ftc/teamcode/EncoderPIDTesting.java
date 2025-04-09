@@ -1,34 +1,34 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.limemode.PIDController;
+import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 
-@TeleOp(name="PIDSimulator")
-public class PIDSImulator extends LinearOpMode {
-    public static double kP = 0;
+@Config
+@TeleOp(name="EncoderPIDTesting")
+public class EncoderPIDTesting extends LinearOpMode {
+    public static double target = 1;
+    public static double SPEED = 3000;
+    public static double kP = 1;
     public static double kI = 0;
     public static double kD = 0;
-    public static double target = 0;
-    private DcMotorEx motor;
     @Override
     public void runOpMode() throws InterruptedException {
+        Chassis chassis = new Chassis(this);
         FtcDashboard dashboard = FtcDashboard.getInstance();
         MultipleTelemetry multipleTelemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
-        PIDController controller = new PIDController(target, kP, kI, kD, multipleTelemetry);
-        motor = hardwareMap.get(DcMotorEx.class, "leftFront");
+        SimplePIDController controller = new SimplePIDController(target, kP, kI, kD, multipleTelemetry);
         waitForStart();
-        double position = 0;
         while (opModeIsActive()) {
-            multipleTelemetry.addLine("Running Simulator...");
-
-            controller.update(position, multipleTelemetry);
-
-            controller.sync(kP, kI, kD, target);
+            controller.sync(target, kP, kI, kD);
+            double out = controller.update(chassis.leftFront.getCurrentPosition(), multipleTelemetry);
+            multipleTelemetry.addData("out", out);
+            chassis.move(0, 0, out, 0, SPEED);
             multipleTelemetry.update();
         }
     }

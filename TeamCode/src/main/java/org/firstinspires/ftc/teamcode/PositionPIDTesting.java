@@ -18,25 +18,22 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.limemode.PIDController;
 
 @Config
-@TeleOp(name="GoToPosition")
-public class GoToPosition extends LinearOpMode {
+@TeleOp(name="PositionPIDTesting")
+public class PositionPIDTesting extends LinearOpMode {
     public static double TIME_BETWEEN_TARGETS = 0;
     int TOTAL_TARGETS = 5;
     int CURRENT_TARGET = 0;
-//    private final double[] X_TARGETS = new double[] {0, 1.2 , 1.2, -1.2, -1.2};
+    //    private final double[] X_TARGETS = new double[] {0, 1.2 , 1.2, -1.2, -1.2};
 //    private final double[] Y_TARGETS = new double[] {0, -1.2, 1.2, 1.2 , -1.2};
-    private final double[] X_TARGETS = new double[] {0, 1.2 , 1.2, -1.2, -1.2};
-    private final double[] Y_TARGETS = new double[] {0, -1.2, 1.2, 1.2 , -1.2};
+    private final double[] X_TARGETS = new double[] {0, 0};
+    private final double[] Y_TARGETS = new double[] {1, -1};
     private double reached_destination = 0;
     public static double DESTINATION_THRESHOLD = 100;
     public static double TARGET_PRECISION = 0.05;
-    public static double SLOWDOWN_PRECISION = 0.2;
     public static double SPIN_SLOWDOWN_THINGY = 500;
     public double TARGET_X = 0;
     public double TARGET_Y = 0;
     public static double SPEED = 3000;
-    public static double SLOWDOWN_SPEED = 1000;
-    private double currentSpeed = 1000;
     public static double SPIN_SPEED = 1000;
     public static boolean PAUSED = false;
     public static double kP = 1;
@@ -51,11 +48,9 @@ public class GoToPosition extends LinearOpMode {
         dashboard = FtcDashboard.getInstance();
         multipleTelemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
         Chassis chassis = new Chassis(this);
-        PIDController xController = new PIDController(TARGET_X, kD, kI, kD);
+        PIDController xController = new PIDController(TARGET_X, kD, kI, kD, multipleTelemetry);
         PIDController yController = new PIDController(TARGET_Y, kP, kI, kD, multipleTelemetry);
         boolean is_on_blue = true;
-        androidSoundPool = new AndroidSoundPool();
-        androidSoundPool.initialize(SoundPlayer.getInstance());
         while (!isStarted()) {
             YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
             double yawDeg = orientation.getYaw(AngleUnit.DEGREES);
@@ -82,6 +77,8 @@ public class GoToPosition extends LinearOpMode {
         double lastDeltaTime = System.currentTimeMillis();
         double waittime = 0;
         boolean pressed = false;
+        xController.reset();
+        yController.reset();
         while (opModeIsActive()) {
             TARGET_X = X_TARGETS[CURRENT_TARGET%TOTAL_TARGETS];
             TARGET_Y = Y_TARGETS[CURRENT_TARGET%TOTAL_TARGETS];
@@ -130,16 +127,18 @@ public class GoToPosition extends LinearOpMode {
                 yController.reset();
                 reached_destination = 0;
             }
+            if (gamepad1.a) {
+                CURRENT_TARGET += 1;
+                if (CURRENT_TARGET >= 2) {
+                    CURRENT_TARGET = 0;
+                }
+            }
             if (reached_destination > DESTINATION_THRESHOLD) {
-                androidSoundPool.play("RawRes:ss_laser");
                 telemetry.addLine("Reached destination!");
                 telemetry.update();
                 chassis.move(0, 0, 0, 0, 0);
-                CURRENT_TARGET++;
                 xController.reset();
                 yController.reset();
-                reached_destination = 0;
-
                 lastDeltaTime = System.currentTimeMillis();
                 continue;
             }
@@ -155,18 +154,12 @@ public class GoToPosition extends LinearOpMode {
                 double y = yController.update(y_pos);
                 double distance = Math.sqrt(x * x + y * y);
                 multipleTelemetry.addData("Distance", distance);
-                if (distance < SLOWDOWN_PRECISION) {
-                    currentSpeed = SLOWDOWN_SPEED;
-                }
-                else {
-                    currentSpeed = SPEED;
-                }
-                multipleTelemetry.addData("Speed", currentSpeed);
+                multipleTelemetry.addData("Speed", SPEED);
                 if (distance < TARGET_PRECISION) {
                     reached_destination += delta;
                 }
                 multipleTelemetry.addData("reached_destination", reached_destination);
-                chassis.move(yawRads + movementOffset, x, y, 0, currentSpeed);
+                chassis.move(yawRads + movementOffset, x, y, 0, SPEED);
                 lastX = x;
                 lastY = y;
                 lastTime = System.currentTimeMillis();

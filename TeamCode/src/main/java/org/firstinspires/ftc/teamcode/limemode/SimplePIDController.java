@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode.limemode;
 
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-public class PIDController {
+public class SimplePIDController {
     public double kP, kI, kD, target;
     private double previousTime = -1;
     private double lastError = -1;
@@ -13,46 +14,30 @@ public class PIDController {
     private double averageError = 0;
     public boolean firstInit = true;
     private Telemetry telemetry;
+    private ElapsedTime timer;
 
-    public PIDController(double initalTarget, double kP, double kI, double kD, Telemetry debug) {
+    public SimplePIDController(double initalTarget, double kP, double kI, double kD, Telemetry debug) {
         this.kP = kP;
         this.telemetry = debug;
         this.kI = kI;
         this.kD = kD;
         this.target = initalTarget;
+        timer = new ElapsedTime();
     }
 
-    public PIDController(double initalTarget, double kP, double kI, double kD) {
+    public SimplePIDController(double initalTarget, double kP, double kI, double kD) {
         this(initalTarget, kP, kI, kD, null);
     }
     public double update(double currentPos) {
         return update(currentPos, null);
     }
     public double update(double currentPos, MultipleTelemetry debug) {
-        double currentTime = System.currentTimeMillis();
-        double deltaTime = previousTime == -1 ? 0 : currentTime - previousTime;
-        deltaTime /= 1000;
-
-        double trueError = target - currentPos;
-
-        if (Math.abs(trueError - actualError) > 0.3 && !firstInit)
-            actualError = trueError + (trueError - actualError) * 0.1;
-        else
-            actualError = trueError;
-
-        if (firstInit) {
-            averageError = actualError;
-            firstInit = false;
-        } else {
-            averageError = averageError * 0.9 + actualError * 0.1;
-        }
-
-        double error = Math.abs(averageError) < 0.2 ? averageError : actualError;
-        double derivitiveError = deltaTime == 0 ? 0 : (error - lastError)/deltaTime;
-        integralError += error * deltaTime;
+        double error = target - currentPos;
+        double derivitiveError = timer.seconds() == 0 ? 0 : (error - lastError)/timer.seconds();
+        integralError += error * timer.seconds();
 
         lastError = error;
-        previousTime = currentTime;
+        previousTime = timer.seconds();
 
         if (debug != null) {
             telemetry.addData("Error", error);
@@ -62,6 +47,7 @@ public class PIDController {
             telemetry.addData("Target Position", target);
             telemetry.addData("Actual Position", currentPos);
         }
+        timer.reset();
         return (kP * error) + (kI * integralError) + (kD * derivitiveError);
     }
 
@@ -72,7 +58,7 @@ public class PIDController {
         if (this.kI != kI) { this.kI = kI; reset(); changed = true;}
         if (this.kP != kP) { this.kP = kP; reset(); changed = true;}
         if (this.target != target) { this.target = target; reset(); changed = true;}
-
+        timer.reset();
         return changed;
     }
 
