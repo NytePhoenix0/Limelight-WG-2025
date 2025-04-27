@@ -9,18 +9,15 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.android.AndroidSoundPool;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.limemode.PIDController;
 import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 
 @Config
-@TeleOp(name="GoToPosition")
-public class GoToPosition extends LinearOpMode {
+@TeleOp(name="GoToPositionOld")
+public class GoToPositionOld extends LinearOpMode {
     public static double TIME_BETWEEN_TARGETS = 0;
     int TOTAL_TARGETS = 5;
     int CURRENT_TARGET = 0;
@@ -35,17 +32,14 @@ public class GoToPosition extends LinearOpMode {
     public static double SPIN_SLOWDOWN_THINGY = 500;
     public double TARGET_X = 0;
     public double TARGET_Y = 0;
-    public static double SPEED = 300000;
+    public static double SPEED = 3000;
     public static double SLOWDOWN_SPEED = 1000;
     private double currentSpeed = 1000;
     public static double SPIN_SPEED = 1000;
     public static boolean PAUSED = false;
-//    public static double kP = 1;
-//    public static double kI = 0.00000000001;
-//    public static double kD = 0.1;
-    public static double kP = 0.006;
-    public static double kI = 0.00055;
-    public static double kD = 0.00002;
+    public static double kP = 1;
+    public static double kI = 0.00000000001;
+    public static double kD = 0.1;
     public MultipleTelemetry multipleTelemetry;
     public FtcDashboard dashboard;
     private AndroidSoundPool androidSoundPool;
@@ -159,13 +153,12 @@ public class GoToPosition extends LinearOpMode {
                 double y = yController.update(y_pos);
                 double distance = Math.sqrt(x * x + y * y);
                 multipleTelemetry.addData("Distance", distance);
-//                if (distance < SLOWDOWN_PRECISION) {
-//                    currentSpeed = SLOWDOWN_SPEED;
-//                }
-//                else {
-//                    currentSpeed = SPEED;
-//                }
-                currentSpeed = SPEED;
+                if (distance < SLOWDOWN_PRECISION) {
+                    currentSpeed = SLOWDOWN_SPEED;
+                }
+                else {
+                    currentSpeed = SPEED;
+                }
                 multipleTelemetry.addData("Speed", currentSpeed);
                 if (distance < TARGET_PRECISION) {
                     reached_destination += delta;

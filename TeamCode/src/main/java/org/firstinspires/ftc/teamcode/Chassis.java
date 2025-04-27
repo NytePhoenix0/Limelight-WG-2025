@@ -69,6 +69,7 @@ public class Chassis {
 
     public DcMotorEx getDriveMotor(String name) {
         DcMotorEx motor = (DcMotorEx) opMode.hardwareMap.get(DcMotor.class, name);
+        motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         return motor;

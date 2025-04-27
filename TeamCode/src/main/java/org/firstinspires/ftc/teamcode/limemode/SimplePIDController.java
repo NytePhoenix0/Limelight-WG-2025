@@ -46,6 +46,7 @@ public class SimplePIDController {
             telemetry.addData("Integral", kI * integralError);
             telemetry.addData("Target Position", target);
             telemetry.addData("Actual Position", currentPos);
+            telemetry.addData("Delta", timer.seconds());
         }
         timer.reset();
         return (kP * error) + (kI * integralError) + (kD * derivitiveError);
