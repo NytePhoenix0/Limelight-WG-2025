@@ -26,8 +26,9 @@ public class EncoderPIDTesting extends LinearOpMode {
     ElapsedTime finish_time;
     boolean hasFullyStopped = false;
     double runtime = -1;
+
     @Override
-    public void runOpMode() throws InterruptedException {
+    public void runOpMode() {
         chassis = new Chassis(this);
         timer= new ElapsedTime();
         finish_time = new ElapsedTime();
@@ -51,7 +52,7 @@ public class EncoderPIDTesting extends LinearOpMode {
             controller.sync(target, kD, kI, kP);
             double out = controller.update(chassis.leftFront.getCurrentPosition(), multipleTelemetry);
             multipleTelemetry.addData("out", out);
-            chassis.move(0, 0, out, 0, SPEED);
+            chassis.move(0, out, 0, 0, SPEED);
             if (out == 0) {
                 if (!hasFullyStopped) finish_time.reset();
                 hasFullyStopped = true;
