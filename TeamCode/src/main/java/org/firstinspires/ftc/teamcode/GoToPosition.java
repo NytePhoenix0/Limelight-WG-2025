@@ -43,9 +43,12 @@ public class GoToPosition extends LinearOpMode {
 //    public static double kP = 1;
 //    public static double kI = 0.00000000001;
 //    public static double kD = 0.1;
-    public static double kP = 0.006;
-    public static double kI = 0.00055;
-    public static double kD = 0.00002;
+    public static double kPy = 0.006;
+    public static double kIy = 0.00055;
+    public static double kDy = 0.00002;
+    public static double kPx = 0.0072;
+    public static double kIx = 0.00065;
+    public static double kDx = 0.000021;
     public MultipleTelemetry multipleTelemetry;
     public FtcDashboard dashboard;
     private AndroidSoundPool androidSoundPool;
@@ -55,8 +58,8 @@ public class GoToPosition extends LinearOpMode {
         dashboard = FtcDashboard.getInstance();
         multipleTelemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
         Chassis chassis = new Chassis(this);
-        SimplePIDController xController = new SimplePIDController(TARGET_X, kD, kI, kD);
-        SimplePIDController yController = new SimplePIDController(TARGET_Y, kP, kI, kD, multipleTelemetry);
+        SimplePIDController xController = new SimplePIDController(TARGET_X, kDx, kIx, kDx);
+        SimplePIDController yController = new SimplePIDController(TARGET_Y, kPy, kIy, kDy, multipleTelemetry);
         boolean is_on_blue = true;
         androidSoundPool = new AndroidSoundPool();
         androidSoundPool.initialize(SoundPlayer.getInstance());
@@ -92,7 +95,7 @@ public class GoToPosition extends LinearOpMode {
             double delta = (System.currentTimeMillis() - lastDeltaTime);
             multipleTelemetry.addData("Delta", delta);
             // Sync values
-            boolean synced = xController.sync(TARGET_X, kD, kI, kP) || yController.sync(TARGET_Y, kD, kI, kP);
+            boolean synced = xController.sync(TARGET_X, kDx, kIx, kPx) || yController.sync(TARGET_Y, kDy, kIy, kPy);
             if (synced) reached_destination = 0;
 
             YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
