@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.foxdrive;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -12,6 +13,7 @@ import org.firstinspires.ftc.teamcode.Chassis;
 import org.firstinspires.ftc.teamcode.limemode.PIDController;
 import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 
+@Config
 @TeleOp(name="angular pid testing")
 public class Fomx extends LinearOpMode {
     public static boolean paused = false;
