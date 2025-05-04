@@ -1,15 +1,26 @@
 package org.firstinspires.ftc.teamcode.foxdrive;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.Chassis;
+import org.firstinspires.ftc.teamcode.limemode.PIDController;
+import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 
-@TeleOp(name="Fomx")
+@TeleOp(name="angular pid testing")
 public class Fomx extends LinearOpMode {
     public static boolean paused = false;
+    public static double kP = 0;
+    public static double kI = 0;
+    public static double kD = 0;
+    public static double THRESHOLD = 0.1;
+    public static double SPEED = 3000;
+    public static double ROTATION_SPEED = 1000;
 
     int targetIndex = 0;
     private double[][] targetPositions = {
@@ -19,9 +30,29 @@ public class Fomx extends LinearOpMode {
             {-1.2, 1.2},
             {-1.2, -1.2}
     };
+
+    private double x = 0;
+    private double y = 0;
+    private double currentTickLF;
+    private double currentTickLR;
+    private double currentTickRF;
+    private double currentTickRR;
+
+    private boolean queueReset = false;
     @Override
     public void runOpMode() {
         Chassis chassis = new Chassis(this);
+        SimplePIDController controller = new SimplePIDController(0, kP, kI, kD);
+        boolean is_on_blue = true;
+        while (!isStarted()) {
+            telemetry.addLine("Waiting for start, A/B to change sides");
+            if (gamepad1.a) is_on_blue = true;
+            else if (gamepad1.b) is_on_blue = false;
+            telemetry.addLine("Starting on " + (is_on_blue ? "BLUE" : "RED"));
+            telemetry.update();
+        }
+        chassis.yawOffset = is_on_blue ? 0 : 180;
+
         waitForStart();
         while (opModeIsActive()) {
             YawPitchRollAngles orientation = chassis.imu.getRobotYawPitchRollAngles();
@@ -31,13 +62,45 @@ public class Fomx extends LinearOpMode {
 
             if (paused) {
                 chassis.move(0, 0, 0, 0, 0);
+                queueReset = true;
                 continue;
             }
 
             double targetX = targetPositions[targetIndex][0];
             double targetY = targetPositions[targetIndex][1];
-
-
+            LLResult llresult = chassis.getLimelightData(yawDeg);
+            if (llresult != null) {
+                Position currentPosition = llresult.getBotpose_MT2().getPosition();
+                x = currentPosition.x;
+                y = currentPosition.z;
+                currentTickLF = chassis.leftFront.getCurrentPosition();
+                currentTickLR = chassis.leftRear.getCurrentPosition();
+                currentTickRF = chassis.rightFront.getCurrentPosition();
+                currentTickRR = chassis.rightRear.getCurrentPosition();
+                telemetry.addData("Current Position", String.format("(%s, %s)", x, y));
+            } else {
+                // do stupid feedforward stuff here later
+                telemetry.addLine("No apriltags seen!!");
+            }
+            double distX = targetX - x;
+            double distY = targetY - y;
+            double distance = Math.sqrt(distX * distX + distY * distY);
+            if (llresult != null && llresult.isValid()) {
+                if (queueReset) {
+                    queueReset = false;
+                    controller.reset();
+                    continue;
+                }
+                double pow = controller.update(distance);
+                chassis.move(yawRads, distX/distance, distY/distance, 0, pow * SPEED);
+                if (pow < THRESHOLD) {
+                    targetIndex++;
+                    queueReset = true;
+                }
+            } else {
+                queueReset = true;
+                chassis.move(yawRads, 0, 0, 1, ROTATION_SPEED);
+            }
         }
     }
 }
