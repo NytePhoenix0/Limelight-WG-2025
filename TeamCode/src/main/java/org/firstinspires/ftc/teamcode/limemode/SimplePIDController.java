@@ -40,13 +40,13 @@ public class SimplePIDController {
         previousTime = timer.seconds();
 
         if (debug != null) {
-            telemetry.addData("Error", error);
-            telemetry.addData("Porportion", kP * error);
-            telemetry.addData("Derivitive", kD * derivitiveError);
-            telemetry.addData("Integral", kI * integralError);
-            telemetry.addData("Target Position", target);
-            telemetry.addData("Actual Position", currentPos);
-            telemetry.addData("Delta", timer.seconds());
+            debug.addData("Error", error);
+            debug.addData("Porportion", kP * error);
+            debug.addData("Derivitive", kD * derivitiveError);
+            debug.addData("Integral", kI * integralError);
+            debug.addData("Target Position", target);
+            debug.addData("Actual Position", currentPos);
+            debug.addData("Delta", timer.seconds());
         }
         timer.reset();
         return (kP * error) + (kI * integralError) + (kD * derivitiveError);
