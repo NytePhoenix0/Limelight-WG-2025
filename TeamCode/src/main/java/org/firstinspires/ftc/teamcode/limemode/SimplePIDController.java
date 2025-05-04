@@ -31,7 +31,7 @@ public class SimplePIDController {
     public double update(double currentPos) {
         return update(currentPos, null);
     }
-    public double update(double currentPos, MultipleTelemetry debug) {
+    public double update(double currentPos, MultipleTelemetry debug) {  
         double error = target - currentPos;
         double derivitiveError = timer.seconds() == 0 ? 0 : (error - lastError)/timer.seconds();
         integralError += error * timer.seconds();

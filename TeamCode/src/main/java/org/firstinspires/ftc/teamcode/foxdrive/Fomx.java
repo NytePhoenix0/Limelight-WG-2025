@@ -17,7 +17,7 @@ import org.firstinspires.ftc.teamcode.limemode.PIDController;
 import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 
 @Config
-@TeleOp(name="angular pid testing")
+@TeleOp(name="AngularPIDTesting")
 public class Fomx extends LinearOpMode {
     public static boolean paused = false;
     public static double kP = 0;

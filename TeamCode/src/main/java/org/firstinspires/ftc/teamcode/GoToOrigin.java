@@ -62,7 +62,7 @@ public class GoToOrigin extends LinearOpMode {
                 staringYaw += yawOffset / ROTATION_OFFSET_DAMPING;
                 if (Double.isNaN(staringYaw)) staringYaw = 0;
             }
-            telemetry.addLine("Waitinxg for start");
+            telemetry.addLine("Waiting for start");
             telemetry.update();
         }
         startingYawRad = (staringYaw/360) * 2 * Math.PI;
