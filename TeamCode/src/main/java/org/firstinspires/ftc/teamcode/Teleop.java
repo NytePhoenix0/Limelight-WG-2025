@@ -32,9 +32,6 @@ public class Teleop extends LimelightOpMode {
         leftRear = getDriveMotor("leftRear");
         rightFront = getDriveMotor("rightFront");
         rightRear = getDriveMotor("rightRear");
-
-        control_hub_imu = hardwareMap.get(IMU.class, "imu2");
-        control_hub_imu.resetYaw();
     }
 
     @Override
@@ -44,11 +41,9 @@ public class Teleop extends LimelightOpMode {
             a = true;
         }
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-        YawPitchRollAngles orientation_control = control_hub_imu.getRobotYawPitchRollAngles();
 
         telemetry.addData("Yaw", orientation.getYaw(AngleUnit.DEGREES));
         telemetry.addData("Yaw vel", imu.getRobotAngularVelocity(AngleUnit.DEGREES).zRotationRate);
-        telemetry.addData("Control Yaw", orientation_control.getYaw(AngleUnit.DEGREES));
         telemetry.addData("Control Yaw vel", control_hub_imu.getRobotAngularVelocity(AngleUnit.DEGREES).zRotationRate);
         telemetry.addData("Runtime", getRuntime());
 

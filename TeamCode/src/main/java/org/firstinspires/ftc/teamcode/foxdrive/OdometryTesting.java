@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.foxdrive;
 
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -15,7 +18,6 @@ public class OdometryTesting extends LimelightOpMode {
     public static double MOTOR_SPEED = 2681.28;
     private final static int[] validIDs = {11,12,13,14,15,16};
     FtcDashboard dashboard;
-    IMU control_hub_imu;
     boolean a = false;
     @Override
     public void start() {
@@ -23,11 +25,17 @@ public class OdometryTesting extends LimelightOpMode {
         leftRear = getDriveMotor("leftRear");
         rightFront = getDriveMotor("rightFront");
         rightRear = getDriveMotor("rightRear");
-
-        control_hub_imu = hardwareMap.get(IMU.class, "imu2");
-        control_hub_imu.resetYaw();
     }
-
+    public static double WHEEL_RADIUS = 0.075;
+    public static double GEAR_RATIO = 1/(3.61 * 5.23);
+    public static double TICKS_PER_REV = 28;
+    private double DISTANCE_PER_TICK = (2 * Math.PI * GEAR_RATIO * WHEEL_RADIUS)/TICKS_PER_REV;
+    private double x = 0;
+    private double y = 0;
+    private double TLR = 0;
+    private double TLF = 0;
+    private double TRR = 0;
+    private double TRF = 0;
     @Override
     public void update() {
         if (!a) {
@@ -35,12 +43,9 @@ public class OdometryTesting extends LimelightOpMode {
             a = true;
         }
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-        YawPitchRollAngles orientation_control = control_hub_imu.getRobotYawPitchRollAngles();
 
         telemetry.addData("Yaw", orientation.getYaw(AngleUnit.DEGREES));
         telemetry.addData("Yaw vel", imu.getRobotAngularVelocity(AngleUnit.DEGREES).zRotationRate);
-        telemetry.addData("Control Yaw", orientation_control.getYaw(AngleUnit.DEGREES));
-        telemetry.addData("Control Yaw vel", control_hub_imu.getRobotAngularVelocity(AngleUnit.DEGREES).zRotationRate);
         telemetry.addData("Runtime", getRuntime());
 
         double y = -gamepad1.left_stick_y;
@@ -60,6 +65,26 @@ public class OdometryTesting extends LimelightOpMode {
         leftRear.setVelocity(backLeftPower * MOTOR_SPEED);
         rightFront.setVelocity(frontRightPower * MOTOR_SPEED);
         rightRear.setVelocity(backRightPower * MOTOR_SPEED);
+
+        double ticksLF = leftFront.getCurrentPosition() - TLF;
+        double ticksLR = leftRear.getCurrentPosition() - TLR;
+        double ticksRF = rightFront.getCurrentPosition() - TRF;
+        double ticksRR = rightRear.getCurrentPosition() - TRR;
+        double leftFrontMeters = ticksLF * DISTANCE_PER_TICK;
+        double rightFrontMeters = ticksRF * DISTANCE_PER_TICK;
+        double leftRearMeters = ticksLR * DISTANCE_PER_TICK;
+        double rightRearMeters = ticksRR * DISTANCE_PER_TICK;
+        TLF = leftFront.getCurrentPosition();
+        TLR = leftRear.getCurrentPosition();
+        TRF = rightFront.getCurrentPosition();
+        TRR = rightRear.getCurrentPosition();
+        double deltaY = (leftFrontMeters + rightFrontMeters + leftRearMeters + rightRearMeters) / 4.0;
+        double deltaX = (leftFrontMeters - rightFrontMeters - leftRearMeters + rightRearMeters) / 4.0;
+        x += deltaX * cos(yawRads) - deltaY * sin(yawRads);
+        y += deltaX * sin(yawRads) + deltaY * cos(yawRads);
+        telemetry.addData("Predicted Position", String.format("(%s, %s)", x, y));
+
+
         telemetry.update();
     }
 

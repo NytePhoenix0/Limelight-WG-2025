@@ -31,7 +31,7 @@ public class SimplePIDController {
     public double update(double currentPos) {
         return update(currentPos, null);
     }
-    public double update(double currentPos, MultipleTelemetry debug) {
+    public double update(double currentPos, MultipleTelemetry debug) {  
         double error = target - currentPos;
         double derivitiveError = timer.seconds() == 0 ? 0 : (error - lastError)/timer.seconds();
         integralError += error * timer.seconds();
@@ -40,13 +40,13 @@ public class SimplePIDController {
         previousTime = timer.seconds();
 
         if (debug != null) {
-            telemetry.addData("Error", error);
-            telemetry.addData("Porportion", kP * error);
-            telemetry.addData("Derivitive", kD * derivitiveError);
-            telemetry.addData("Integral", kI * integralError);
-            telemetry.addData("Target Position", target);
-            telemetry.addData("Actual Position", currentPos);
-            telemetry.addData("Delta", timer.seconds());
+            debug.addData("Error", error);
+            debug.addData("Porportion", kP * error);
+            debug.addData("Derivitive", kD * derivitiveError);
+            debug.addData("Integral", kI * integralError);
+            debug.addData("Target Position", target);
+            debug.addData("Actual Position", currentPos);
+            debug.addData("Delta", timer.seconds());
         }
         timer.reset();
         return (kP * error) + (kI * integralError) + (kD * derivitiveError);
