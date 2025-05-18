@@ -13,6 +13,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.Chassis;
 import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 
+import java.io.IOException;
+
 @Config
 @TeleOp(name="Automatic PID Tuning")
 public class AutomaticPIDTuning extends LinearOpMode {
@@ -20,9 +22,9 @@ public class AutomaticPIDTuning extends LinearOpMode {
 
     public static boolean runFinished = false;
     public static boolean paused = false;
-    public static double target = 1;
+    public static double target = 2000;
     public static double SPEED = 3000;
-    public static double kP = 1;
+    public static double kP = 0.01;
     public static double kI = 0;
     public static double kD = 0;
 
@@ -51,6 +53,10 @@ public class AutomaticPIDTuning extends LinearOpMode {
 
         boolean lastPaused = false;
         while (opModeIsActive()) {
+            if (gamepad1.start) {
+                paused = true;
+            }
+
             if (runFinished) {
                 chassis.move(0, 0, 0, 0, 0);
                 multipleTelemetry.update();
@@ -89,18 +95,22 @@ public class AutomaticPIDTuning extends LinearOpMode {
 
                 if (finish_time.seconds() >= 1) {
                     runFinished = true;
-                    paused = true;
                 }
             } else {
                 runtime = -1;
                 hasFullyStopped = false;
             }
-            if (timer.seconds() > 5) {
-                runFinished = true;
-                paused = true;
-            }
+//            if (timer.seconds() > 5) {
+//                runFinished = true;
+//            }
 
             multipleTelemetry.update();
+        }
+
+        try {
+            saveFile.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
