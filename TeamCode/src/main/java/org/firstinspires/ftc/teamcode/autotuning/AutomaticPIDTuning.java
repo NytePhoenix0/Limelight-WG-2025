@@ -5,6 +5,7 @@ import android.os.Environment;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -19,6 +20,9 @@ import java.io.IOException;
 @TeleOp(name="Automatic PID Tuning")
 public class AutomaticPIDTuning extends LinearOpMode {
     public static final String FILE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PIDTuning/";
+
+    public static double SETTLING_THRESHOLD = 15;
+    public static double SETTLING_TIME = 400;
 
     public static boolean runFinished = false;
     public static boolean paused = false;
@@ -88,12 +92,14 @@ public class AutomaticPIDTuning extends LinearOpMode {
             multipleTelemetry.addData("out", out);
 
             chassis.move(0, 0, out, 0, SPEED);
-            if (out == 0) {
+
+            double error = target - chassis.leftFront.getCurrentPosition();
+            if (Math.abs(error) <= SETTLING_THRESHOLD) {
                 if (!hasFullyStopped) finish_time.reset();
                 hasFullyStopped = true;
                 if (runtime == -1) runtime = timer.milliseconds();
 
-                if (finish_time.seconds() >= 1) {
+                if (finish_time.milliseconds() >= 100) {
                     runFinished = true;
                 }
             } else {

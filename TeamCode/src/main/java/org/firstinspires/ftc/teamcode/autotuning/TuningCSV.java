@@ -141,9 +141,7 @@ public class TuningCSV {
                     "kI=" + kI + ", " +
                     "kD=" + kD + ']';
         }
-
-
-        }
+    }
 
     public static final class DataValue {
         private final double time;
@@ -182,7 +180,5 @@ public class TuningCSV {
                     "time=" + time + ", " +
                     "jerk=" + jerk + ']';
         }
-
-
-        }
+    }
 }
