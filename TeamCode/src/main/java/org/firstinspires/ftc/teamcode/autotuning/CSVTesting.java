@@ -5,10 +5,7 @@ import android.os.Environment;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 @TeleOp(name = "CSV", group = "Testing")
 public class CSVTesting extends LinearOpMode {

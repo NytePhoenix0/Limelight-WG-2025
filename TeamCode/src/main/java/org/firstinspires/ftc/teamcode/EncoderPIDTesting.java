@@ -14,10 +14,11 @@ import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 @Config
 @TeleOp(name="EncoderPIDTesting")
 public class EncoderPIDTesting extends LinearOpMode {
+    public static boolean horizontal = false;
     public static boolean pause = false;
-    public static double target = 1;
+    public static double target = 3000;
     public static double SPEED = 3000;
-    public static double kP = 1;
+    public static double kP = 0.05;
     public static double kI = 0;
     public static double kD = 0;
     SimplePIDController controller;
@@ -52,7 +53,7 @@ public class EncoderPIDTesting extends LinearOpMode {
             controller.sync(target, kD, kI, kP);
             double out = controller.update(chassis.leftFront.getCurrentPosition(), multipleTelemetry);
             multipleTelemetry.addData("out", out);
-            chassis.move(0, out, 0, 0, SPEED);
+            chassis.move(0, horizontal ? out : 0, horizontal ? 0 : out, 0, SPEED);
             if (out == 0) {
                 if (!hasFullyStopped) finish_time.reset();
                 hasFullyStopped = true;
