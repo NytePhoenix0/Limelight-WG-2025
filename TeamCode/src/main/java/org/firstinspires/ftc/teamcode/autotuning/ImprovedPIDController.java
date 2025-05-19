@@ -13,7 +13,6 @@ public class ImprovedPIDController {
     private double lastDeriv = 0;
 
     private static final double SMOOTHING_ALPHA = 0.1;
-    private static final double SETTLING_THRESHOLD = 15;
     private static final double DERIVATIVE_THRESHOLD = 2;
 
     private Telemetry telemetry;
@@ -66,10 +65,10 @@ public class ImprovedPIDController {
         return (kP * error) + (kI * integralError) + (kD * derivitiveError);
     }
 
-    public boolean isSettled(double currentPos) {
+    public boolean isSettled(double currentPos, double tolerance) {
         double error = target - currentPos;
         double errorRate = Math.abs(lastDeriv);
-        return Math.abs(error) < SETTLING_THRESHOLD && errorRate < DERIVATIVE_THRESHOLD;
+        return Math.abs(error) < tolerance && errorRate < DERIVATIVE_THRESHOLD;
     }
 
     public boolean sync(double target, double kD, double kI, double kP) {

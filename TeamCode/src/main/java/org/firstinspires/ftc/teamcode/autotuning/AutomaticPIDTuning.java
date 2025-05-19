@@ -2,136 +2,166 @@ package org.firstinspires.ftc.teamcode.autotuning;
 
 import android.os.Environment;
 
-import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Chassis;
-import org.firstinspires.ftc.teamcode.limemode.SimplePIDController;
 
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Locale;
+import java.util.Random;
 
-@Config
-@TeleOp(name="Automatic PID Tuning")
+@TeleOp(name = "PID AutoTuner", group = "Tuning")
 public class AutomaticPIDTuning extends LinearOpMode {
-    public static final String FILE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PIDTuning/";
+    private static final double TARGET_POSITION = 2000;
+    private static final double TOLERANCE = 15;
+    private static final double MAX_TIME = 5.0;
+    private static final double SESSION_TIMEOUT = 300.0;
 
-    public static double SETTLING_THRESHOLD = 15;
-    public static double SETTLING_TIME = 400;
+    private static final double START_KP = 0.005;
+    private static final double START_KI = 0;
+    private static final double START_KD = 0.0005;
 
-    public static boolean runFinished = false;
-    public static boolean paused = false;
-    public static double target = 2000;
-    public static double SPEED = 3000;
-    public static double kP = 0.01;
-    public static double kI = 0;
-    public static double kD = 0;
+    private static final double MAX_KP = 0.05;
+    private static final double MAX_KI = 0.01;
+    private static final double MAX_KD = 0.01;
 
-    SimplePIDController pidController;
-    Chassis chassis;
-    ElapsedTime timer;
-    ElapsedTime finish_time;
+    private static final double PERTURBATION = 0.5;
 
-    boolean hasFullyStopped = false;
-    double runtime = -1;
+    private final Random random = new Random();
 
     @Override
     public void runOpMode() {
-        chassis = new Chassis(this);
-        timer = new ElapsedTime();
-        finish_time = new ElapsedTime();
+        Chassis chassis = new Chassis(this);
+        TuningCSV saveFile = new TuningCSV(Environment.getExternalStorageDirectory().getAbsolutePath() + "/PIDTuning/", "auto_tuning_results");
 
-        FtcDashboard dashboard = FtcDashboard.getInstance();
-        MultipleTelemetry multipleTelemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
+        double bestTime = Double.MAX_VALUE;
+        double bestJerk = Double.MAX_VALUE;
+        double bestKP = START_KP, bestKI = START_KI, bestKD = START_KD;
 
-        pidController = new SimplePIDController(target, kP, kI, kD, multipleTelemetry);
-
-        TuningCSV saveFile = new TuningCSV(FILE_PATH, "auto_tuning_data");
+        ElapsedTime sessionTimer = new ElapsedTime();
 
         waitForStart();
+        sessionTimer.reset();
 
-        boolean lastPaused = false;
-        while (opModeIsActive()) {
-            if (gamepad1.start) {
-                paused = true;
-            }
+        double targetPosition = -TARGET_POSITION;
+        while (opModeIsActive() && sessionTimer.seconds() < SESSION_TIMEOUT) {
+            double kP = randomNext(bestKP, MAX_KP);
+            double kI = randomNext(bestKI, MAX_KI);
+            double kD = randomNext(bestKD, MAX_KD);
 
-            if (runFinished) {
-                chassis.move(0, 0, 0, 0, 0);
-                multipleTelemetry.update();
+            targetPosition = -targetPosition;
 
-                saveFile.addDataLive(kP, kI, kD, runtime, -1);
-                target = -target;
+            ImprovedPIDController pid = new ImprovedPIDController(targetPosition, kP, kI, kD, telemetry);
+            ElapsedTime timer = new ElapsedTime();
+            double prevVel = 0;
+            double totalJerk = 0;
 
-                reset();
-                runFinished = false;
-            }
+            resetEncoders(chassis);
 
-            if (paused) {
-                lastPaused = true;
-                multipleTelemetry.addLine("PAUSED.");
-                multipleTelemetry.addData("Output:", String.format("%s,%s,%s,%s", kP, kI, kD, runtime));
-                multipleTelemetry.update();
+            timer.reset();
+            while (opModeIsActive() && timer.seconds() < MAX_TIME) {
+                double current = getAveragePosition(chassis);
+                double power = pid.update(current);
+                power = Math.max(-1, Math.min(1, power));
 
-                chassis.move(0, 0, 0, 0, 0);
+                setAllDrivePower(chassis, power);
 
-                continue;
-            } else if (lastPaused) {
-                reset();
-                lastPaused = false;
-            }
+                double currVel = getAverageVelocity(chassis);
+                double jerk = Math.abs(currVel - prevVel);
+                prevVel = currVel;
+                totalJerk += jerk;
 
-            pidController.sync(target, kD, kI, kP);
+                telemetry.addData("kP", kP);
+                telemetry.addData("kI", kI);
+                telemetry.addData("kD", kD);
+                telemetry.addData("Power", power);
+                telemetry.addData("Error", targetPosition - current);
+                telemetry.update();
 
-            double out = pidController.update(chassis.leftFront.getCurrentPosition(), multipleTelemetry);
-            multipleTelemetry.addData("out", out);
-
-            chassis.move(0, 0, out, 0, SPEED);
-
-            double error = target - chassis.leftFront.getCurrentPosition();
-            if (Math.abs(error) <= SETTLING_THRESHOLD) {
-                if (!hasFullyStopped) finish_time.reset();
-                hasFullyStopped = true;
-                if (runtime == -1) runtime = timer.milliseconds();
-
-                if (finish_time.milliseconds() >= 100) {
-                    runFinished = true;
+                if (pid.isSettled(current, TOLERANCE) && Math.abs(currVel) < 5) {
+                    break;
                 }
-            } else {
-                runtime = -1;
-                hasFullyStopped = false;
             }
-//            if (timer.seconds() > 5) {
-//                runFinished = true;
-//            }
 
-            multipleTelemetry.update();
+            double timeTaken = timer.seconds();
+            saveFile.addDataLive(kP, kI, kD, timeTaken, totalJerk);
+
+            if (timeTaken < bestTime && totalJerk < bestJerk) {
+                bestTime = timeTaken;
+                bestJerk = totalJerk;
+                bestKP = kP;
+                bestKI = kI;
+                bestKD = kD;
+                telemetry.addLine("New Best Found!");
+            } else {
+                telemetry.addLine("Not better");
+            }
+
+            telemetry.addData("Best Time", bestTime);
+            telemetry.addData("Best Jerk", bestJerk);
+            telemetry.update();
+
+            sleep(500);
         }
 
         try {
             saveFile.close();
+            writeBestToFile(bestKP, bestKI, bestKD);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void reset() {
+    private double randomNext(double base, double max) {
+        double range = max * PERTURBATION;
+        double result = base + (random.nextDouble() * 2 - 1) * range;
+        return Math.max(0, Math.min(result, max));
+    }
+
+    private void resetEncoders(Chassis chassis) {
         chassis.leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        chassis.leftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         chassis.leftRear.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        chassis.leftRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         chassis.rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        chassis.rightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         chassis.rightRear.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        chassis.leftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        chassis.leftRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        chassis.rightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         chassis.rightRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        pidController.reset();
-        timer.reset();
-        finish_time.reset();
-        runtime = -1;
+    }
+
+    private double getAveragePosition(Chassis chassis) {
+        return (
+                chassis.leftFront.getCurrentPosition() +
+                        chassis.leftRear.getCurrentPosition() +
+                        chassis.rightFront.getCurrentPosition() +
+                        chassis.rightRear.getCurrentPosition()
+        ) / 4.0;
+    }
+
+    private double getAverageVelocity(Chassis chassis) {
+        return (
+                chassis.leftFront.getVelocity() +
+                        chassis.leftRear.getVelocity() +
+                        chassis.rightFront.getVelocity() +
+                        chassis.rightRear.getVelocity()
+        ) / 4.0;
+    }
+
+    private void setAllDrivePower(Chassis chassis, double power) {
+        chassis.leftFront.setPower(power);
+        chassis.leftRear.setPower(power);
+        chassis.rightFront.setPower(power);
+        chassis.rightRear.setPower(power);
+    }
+
+    private void writeBestToFile(double kP, double kI, double kD) throws IOException {
+        FileWriter writer = new FileWriter(Environment.getExternalStorageDirectory().getAbsolutePath() + "/PIDTuning/best_pid_constants.txt");
+        writer.write(String.format(Locale.ENGLISH, "kP=%.6f\nkI=%.6f\nkD=%.6f\n", kP, kI, kD));
+        writer.close();
     }
 }
