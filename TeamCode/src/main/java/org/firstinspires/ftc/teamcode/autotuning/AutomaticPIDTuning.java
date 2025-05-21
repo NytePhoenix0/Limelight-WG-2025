@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.Chassis;
 
@@ -57,7 +58,7 @@ public class AutomaticPIDTuning extends LinearOpMode {
 
             ImprovedPIDController pid = new ImprovedPIDController(targetPosition, kP, kI, kD, telemetry);
             ElapsedTime timer = new ElapsedTime();
-            double prevVel = 0;
+            double previousVelocity = 0;
             double totalJerk = 0;
 
             resetEncoders(chassis);
@@ -66,13 +67,13 @@ public class AutomaticPIDTuning extends LinearOpMode {
             while (opModeIsActive() && timer.seconds() < MAX_TIME) {
                 double current = getAveragePosition(chassis);
                 double power = pid.update(current);
-                power = Math.max(-1, Math.min(1, power));
+                power = Range.clip(power, -1, 1);
 
                 setAllDrivePower(chassis, power);
 
-                double currVel = getAverageVelocity(chassis);
-                double jerk = Math.abs(currVel - prevVel);
-                prevVel = currVel;
+                double currentVelocity = getAverageVelocity(chassis);
+                double jerk = Math.abs(currentVelocity - previousVelocity);
+                previousVelocity = currentVelocity;
                 totalJerk += jerk;
 
                 telemetry.addData("kP", kP);
@@ -82,7 +83,7 @@ public class AutomaticPIDTuning extends LinearOpMode {
                 telemetry.addData("Error", targetPosition - current);
                 telemetry.update();
 
-                if (pid.isSettled(current, TOLERANCE) && Math.abs(currVel) < 5) {
+                if (pid.isSettled(current, TOLERANCE) && Math.abs(currentVelocity) < 5) {
                     break;
                 }
             }
