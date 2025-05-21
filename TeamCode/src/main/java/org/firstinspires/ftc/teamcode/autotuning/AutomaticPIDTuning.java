@@ -135,21 +135,25 @@ public class AutomaticPIDTuning extends LinearOpMode {
     }
 
     private double getAveragePosition(Chassis chassis) {
-        return (
-                chassis.leftFront.getCurrentPosition() +
-                        chassis.leftRear.getCurrentPosition() +
-                        chassis.rightFront.getCurrentPosition() +
-                        chassis.rightRear.getCurrentPosition()
-        ) / 4.0;
+        return chassis.leftFront.getCurrentPosition();
+        // TODO: Test if this is worse or better than just using one wheel
+//        return (
+//                chassis.leftFront.getCurrentPosition() +
+//                        chassis.leftRear.getCurrentPosition() +
+//                        chassis.rightFront.getCurrentPosition() +
+//                        chassis.rightRear.getCurrentPosition()
+//        ) / 4.0;
     }
 
     private double getAverageVelocity(Chassis chassis) {
-        return (
-                chassis.leftFront.getVelocity() +
-                        chassis.leftRear.getVelocity() +
-                        chassis.rightFront.getVelocity() +
-                        chassis.rightRear.getVelocity()
-        ) / 4.0;
+        return chassis.leftFront.getVelocity();
+        // TODO: Test if this is worse or better than just using one wheel
+//        return (
+//                chassis.leftFront.getVelocity() +
+//                        chassis.leftRear.getVelocity() +
+//                        chassis.rightFront.getVelocity() +
+//                        chassis.rightRear.getVelocity()
+//        ) / 4.0;
     }
 
     private void setAllDrivePower(Chassis chassis, double power) {
