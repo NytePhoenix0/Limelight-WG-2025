@@ -88,7 +88,7 @@ public class AutomaticPIDTuning extends LinearOpMode {
                 }
             }
 
-            double timeTaken = timer.seconds();
+            double timeTaken = timer.milliseconds();
             saveFile.addDataLive(kP, kI, kD, timeTaken, totalJerk);
 
             if (timeTaken < bestTime && totalJerk < bestJerk) {
