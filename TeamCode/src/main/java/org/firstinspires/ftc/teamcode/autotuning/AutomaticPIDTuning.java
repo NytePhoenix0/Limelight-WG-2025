@@ -30,7 +30,7 @@ public class AutomaticPIDTuning extends LinearOpMode {
     private static final double MAX_KI = 0.01;
     private static final double MAX_KD = 0.01;
 
-    private static final double PERTURBATION = 0.5;
+    private static final double PERTURBATION = 0.08;
 
     private final Random random = new Random();
 
